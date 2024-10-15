@@ -79,15 +79,6 @@ class text_gui():
                         print('Invalid option')
             if self.exit:
                 return
-
-    
-    def inspect_specific_album(self) -> None:
-        user_input = input('Type the ID of the desired album or q to go back:\n')
-        if user_input.isdigit():
-            self.inspect_album(user_input)
-        elif not user_input == 'q':
-            self.inspect_specifc_user()
-            print('The album ID must be an integer')
         
     def inspect_album(self, album_id: str) -> None:
         while True:
@@ -99,7 +90,7 @@ class text_gui():
                     case '1':
                         self.fetcher.fetch_all_of_topic('/albums/' + album_id)
                     case '2':
-                        self.inspect_specific_photo()
+                        self.inspect_specific('photo')
                     case '9':
                         break
                     case 'q':
@@ -109,13 +100,10 @@ class text_gui():
             if self.exit:
                 return
 
-    def inspect_specific_photo(self) -> None:
-        pass
+    def inspect_photo(self, photo_id: str) -> None:
+        self.fetcher.fetch_all_of_topic('/photos/' + photo_id)
 
-
-    def inspect_specific_post(self, user_id: str) -> None:
-        pass
-
-    
+    def inspect_post(self, post_id: str) -> None:
+        self.fetcher.fetch_all_of_topic('/posts/' + post_id)
 
         
