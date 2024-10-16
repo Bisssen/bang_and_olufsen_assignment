@@ -11,15 +11,6 @@ pytestmark = pytest.mark.fetcher_test
 def fetcher_instance() -> fetcher:
     return fetcher()
 
-
-def combine_parametrize_list(list_1: list[any], list_2: list[any]) -> list[any]:
-    if len(list_1[0]) == 1:
-        combined_list = [tuple([tup]+[value]) for tup, value in zip(list_1, list_2)]
-    else:
-        combined_list = [list(tup)+[value] for tup, value in zip(list_1, list_2)]
-    
-    return combined_list
-
 @patch('requests.get')
 class TestFetchAll:
     
@@ -33,9 +24,9 @@ class TestFetchAll:
     
 
     @pytest.mark.parametrize('mock_list_from_get_call, status_code, expected_output',
-                                [([{'id':1}], 200, "{'id': 1}"),
-                                ([], 404, "The selected ID is invalid")])
-    def test_return_string(
+                             [([{'id':1}], 200, "{'id': 1}"),
+                              ([], 404, "The selected ID is invalid")])
+    def test_expected_output(
         self, mock_get: Mock,
         fetcher_instance: fetcher,
         mock_list_from_get_call: list[dict[str, int | str]],
@@ -50,41 +41,40 @@ class TestFetchAll:
         assert string == expected_output
 
 
-class TestFetcher:
-    # json_object_to_string_pairs = [([{'id':1}], "{'id': 1}"),
-    #                                ([{'name': 'bob'}], "{'name': 'bob'}"),
-    #                                ([{'name': 'bob'}, {'id': 1}], "{'name': 'bob'}\n{'id': 1}"),
-    #                                ([{'id': 1}, {'name': 'bob'}], "{'id': 1}\n{'name': 'bob'}"),
-    #                                ([], '')]
-    
-    mock_json_objects = [([{'id':1}]),
-                         ([{'name': 'bob'}]),
-                         ([{'name': 'bob'}, {'id': 1}]),
-                         ([{'id': 1}, {'name': 'bob'}]),
-                         ([])]
+@pytest.mark.parametrize('json_list, expected_string_output',
+                        [([{'id':1}], "{'id': 1}"),
+                         ([{'name': 'bob'}], "{'name': 'bob'}"),
+                         ([{'name': 'bob'}, {'id': 1}], "{'name': 'bob'}\n{'id': 1}"),
+                         ([{'id': 1}, {'name': 'bob'}], "{'id': 1}\n{'name': 'bob'}"),
+                         ([], '')])
+class TestJsonListToString:
+    @pytest.fixture
+    def fetcher_instance(json_list) -> fetcher:
+        return fetcher()
 
-    string_outputs = [("{'id': 1}"),
-                      ("{'name': 'bob'}"),
-                      ("{'name': 'bob'}\n{'id': 1}"),
-                      ("{'id': 1}\n{'name': 'bob'}"),
-                      ('')]
-
-    json_object_to_string_pairs = combine_parametrize_list(mock_json_objects, string_outputs)
-    tmp = combine_parametrize_list(mock_json_objects, string_outputs)
-
-
-    @pytest.mark.parametrize('_input, _output', json_object_to_string_pairs)
-    def test_list_of_dict_string_convertion(
+    def test_istance_of_string(
         self,
         fetcher_instance: fetcher,
-        _input: list[dict[str, int | str]],
-        _output: str)-> None:
+        json_list: list[dict[str, int | str]],
+        expected_string_output: str)-> None:
         # Test that a string is returned
-        assert isinstance(fetcher_instance.convert_list_of_dicts_to_string(_input), str)
-        # # Test that the string divided by the right amount of new lines
-        assert len(_input) - 1 == fetcher_instance.convert_list_of_dicts_to_string(_input).count('\n') or\
-            len(_input) == 0 and fetcher_instance.convert_list_of_dicts_to_string(_input).count('\n') == 0
+        assert isinstance(fetcher_instance.convert_list_of_dicts_to_string(json_list), str)
+        
+    def test_number_of_new_lines(
+        self,
+        fetcher_instance: fetcher,
+        json_list: list[dict[str, int | str]],
+        expected_string_output: str)-> None:
+        # Test that the string divided by the right amount of new lines
+        assert len(json_list) - 1 == fetcher_instance.convert_list_of_dicts_to_string(json_list).count('\n') or\
+            len(json_list) == 0 and fetcher_instance.convert_list_of_dicts_to_string(json_list).count('\n') == 0
+    
+    def test_expected_output(
+        self,
+        fetcher_instance: fetcher,
+        json_list: list[dict[str, int | str]],
+        expected_string_output: str)-> None:
         # Test that the string appears as expected
-        assert fetcher_instance.convert_list_of_dicts_to_string(_input) == _output
+        assert fetcher_instance.convert_list_of_dicts_to_string(json_list) == expected_string_output
 
 
