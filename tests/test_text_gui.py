@@ -30,17 +30,29 @@ def test_next_state(text_gui_instance: text_gui) -> None:
     text_gui_instance.set_next_state(test_state)
     assert text_gui_instance.state == test_state
 
-
-            
-
+@pytest.mark.parametrize('user_input', 
+                        ['1', 'q'])
+@pytest.mark.parametrize('function_input', 
+                        ['user', 'album', 'photo', 'post', 'comment'])
 def test_inspect_specific(
         text_gui_instance: text_gui,
-        monkeypatch: pytest.MonkeyPatch) -> None:
-
-    
+        user_input: str,
+        function_input: str,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
     # Temporary change the input function to return users/1
-    monkeypatch.setattr('builtins.input', lambda _: 'f')
-    text_gui_instance.inspect_specific('user')
+    monkeypatch.setattr('builtins.input', lambda _: user_input)
+    # Set the state of the gui to a known dummy variable
+    pre_state = 'test'
+    text_gui_instance.state = pre_state
+    text_gui_instance.inspect_specific(function_input)
+    captured_output = capsys.readouterr()
+    string = captured_output.out
+    if user_input.isdigit():
+        assert text_gui_instance.state == function_input
+    else:
+        assert text_gui_instance.state == pre_state
+        assert string == f'\nThe {function_input} ID must be an integer\n'    
 
 
 # def inspect_specific(self, id_type: str) -> None:
