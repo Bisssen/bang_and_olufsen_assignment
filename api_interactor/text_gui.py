@@ -165,15 +165,14 @@ class text_gui():
         '''
         user_input = input('\n'
                            f'Type the ID of the desired {id_type}'
-                           'or q to go back:\n')
+                           'or anything else to go back:\n')
         if user_input.isdigit():
             # Set the current selected id
             self.selected_ids[id_type] = user_input
             # Set the next state based on the provided id_type
             self.set_next_state(id_type)
-        elif not user_input == 'q':
-            self.inspect_specific(id_type)
-            print(f'The {id_type} ID must be an integer')
+        else:
+            print(f'\nThe {id_type} ID must be an integer')
 
     def inspect_specific_path(self) -> None:
         user_input = input('\n'
