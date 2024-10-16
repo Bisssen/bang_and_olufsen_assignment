@@ -1,6 +1,5 @@
-from xmlrpc.client import boolean
 from .fetcher import fetcher
-### STATES
+# STATES
 TOP = 'top'
 USER = 'user'
 ALBUM = 'album'
@@ -9,20 +8,20 @@ POST = 'post'
 COMMENT = 'comment'
 
 
-
 class text_gui():
     def __init__(self) -> None:
         self.fetcher: fetcher = fetcher()
 
-        self.exit: boolean = False
+        # Boolean that makes the gui exit
+        self.exit = False
         # The states must be named something_state
         # The self.inspect_specific function only works if
         # the states are named after the topic they inspect
         # e.g. user_inspect_state
         self.state: str = TOP
 
+        # Dict that keeps track of which ids the user have selected
         self.selected_ids: dict[str, str] = {}
-    
 
     def loop(self) -> None:
         first = True
@@ -30,8 +29,10 @@ class text_gui():
         while not self.exit:
             # Ensure the state exists
             if not hasattr(self, self.state + '_state'):
-                raise ValueError(f'State used that does not exist: {self.state}.'
-                                'All states must be named: something_state')
+                raise ValueError(
+                    f'State used that does not exist: {self.state}.'
+                    'All states must be named: something_state'
+                    )
 
             # Make a line skip except for when the program have just started
             if first:
@@ -41,7 +42,7 @@ class text_gui():
 
             # Call the current state
             getattr(self, self.state + '_state')()
-    
+
     def top_state(self) -> None:
         user_input = input('1. Display the data of all the users\n'
                            '2. Inspect a specific user\n'
@@ -124,8 +125,8 @@ class text_gui():
                 print('\nInvalid option')
 
     def photo_state(self) -> None:
-        self.fetcher.fetch_and_print_all_of_topic('/photos/' +\
-            self.selected_ids['photo'])
+        self.fetcher.fetch_and_print_all_of_topic('/photos/' +
+                                                  self.selected_ids['photo'])
         self.set_next_state(ALBUM)
 
     def post_state(self) -> None:
@@ -151,10 +152,10 @@ class text_gui():
                 self.activate_exit()
             case default:
                 print('\nInvalid option')
-    
+
     def comment_state(self) -> None:
-        self.fetcher.fetch_and_print_all_of_topic('/comments/' +\
-            self.selected_ids['comment'])
+        self.fetcher.fetch_and_print_all_of_topic('/comments/' +
+                                                  self.selected_ids['comment'])
         self.set_next_state(POST)
 
     def inspect_specific(self, id_type: str) -> None:
@@ -179,7 +180,7 @@ class text_gui():
                            f'Type the path of the desired topic:\n'
                            f'{self.fetcher.root_url}')
         self.fetcher.fetch_and_print_all_of_topic(user_input)
-    
+
     def print_route_map(self) -> None:
         print('users - > albums - > photos\n'
               '      | > todos\n'

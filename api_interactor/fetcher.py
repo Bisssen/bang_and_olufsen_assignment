@@ -7,7 +7,6 @@ class fetcher():
         self.root_url = 'https://jsonplaceholder.typicode.com/'
 
     def fetch_and_print_all_of_topic(self, topic: str) -> None:
-        
         json_string = self.fetch_all_of_topic(topic)
         # Make a line change to make the reponse easier to read
         print(f'\n{json_string}')
@@ -25,7 +24,10 @@ class fetcher():
         else:
             return str(json_list)
 
-    def convert_list_of_dicts_to_string(self, json_list: list[dict[str, int | str]]) -> str:
+    def convert_list_of_dicts_to_string(
+            self,
+            json_list: list[dict[str, int | str]]
+            ) -> str:
         final_string = ''
         for json_dict in json_list:
             final_string += str(json_dict) + '\n'
