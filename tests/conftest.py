@@ -11,3 +11,8 @@ def api_mock_instance_valid() -> Mock:
     # to easily have access to the expected result
     mock_response.string_converted_expected_result = "{'id': 1}"
     return mock_response
+
+@pytest.fixture(autouse=True)
+def no_requests(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Disable API request. Should ensure no actual calls are made
+    monkeypatch.delattr("requests.sessions.Session.request")

@@ -11,6 +11,10 @@ def fetcher_instance() -> fetcher:
 
 @patch('requests.get')
 class TestFetchAll:
+    get_test_parameters = [([{'id':1}], 200, "{'id': 1}"),
+                           ([], 404, "The selected ID is invalid")]
+
+
     @pytest.mark.parametrize('routes', ['users/1', '/albums/1/photos', 'photos/2'])
     def test_routes_construction(
             self,
@@ -25,9 +29,7 @@ class TestFetchAll:
         mock_get.assert_called_with(f'https://jsonplaceholder.typicode.com/{routes}')
     
 
-    get_test_parameters = [([{'id':1}], 200, "{'id': 1}"),
-                              ([], 404, "The selected ID is invalid")]
-
+    
     @pytest.mark.parametrize('mock_list_from_get_call, status_code, expected_output',
                              get_test_parameters)
     def test_expected_output(
@@ -82,34 +84,18 @@ class TestFetchAll:
                          ([{'name': 'bob'}, {'id': 1}], "{'name': 'bob'}\n{'id': 1}"),
                          ([{'id': 1}, {'name': 'bob'}], "{'id': 1}\n{'name': 'bob'}"),
                          ([], '')])
-class TestJsonListToString:
-    @pytest.fixture
-    def fetcher_instance(json_list) -> fetcher:
-        return fetcher()
-
-    def test_istance_of_string(
-            self,
-            fetcher_instance: fetcher,
-            json_list: list[dict[str, int | str]],
-            expected_string_output: str)-> None:
-        # Test that a string is returned
-        assert isinstance(fetcher_instance.convert_list_of_dicts_to_string(json_list), str)
-        
-    def test_number_of_new_lines(
-            self,
-            fetcher_instance: fetcher,
-            json_list: list[dict[str, int | str]],
-            expected_string_output: str)-> None:
-        # Test that the string divided by the right amount of new lines
-        assert len(json_list) - 1 == fetcher_instance.convert_list_of_dicts_to_string(json_list).count('\n') or\
-            len(json_list) == 0 and fetcher_instance.convert_list_of_dicts_to_string(json_list).count('\n') == 0
+def test_expected_output_of_convert_list_of_dicts_to_string(
+        fetcher_instance: fetcher,
+        json_list: list[dict[str, int | str]],
+        expected_string_output: str)-> None:
+    # Test that a string is returned
+    assert isinstance(fetcher_instance.convert_list_of_dicts_to_string(json_list), str)
+    # Test that the string divided by the right amount of new lines
+    assert len(json_list) - 1 == fetcher_instance.convert_list_of_dicts_to_string(json_list).count('\n') or\
+        len(json_list) == 0 and fetcher_instance.convert_list_of_dicts_to_string(json_list).count('\n') == 0
+    # Test that the output matches the expected output
+    assert fetcher_instance.convert_list_of_dicts_to_string(json_list) == expected_string_output
     
-    def test_expected_output(
-            self,
-            fetcher_instance: fetcher,
-            json_list: list[dict[str, int | str]],
-            expected_string_output: str)-> None:
-        # Test that the string appears as expected
-        assert fetcher_instance.convert_list_of_dicts_to_string(json_list) == expected_string_output
+
 
 

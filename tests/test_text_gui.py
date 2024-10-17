@@ -1,13 +1,25 @@
 import pytest
 from unittest.mock import patch, Mock
-from api_interactor.text_gui import text_gui
+from api_interactor.text_gui import text_gui, TOP, USER, ALBUM, POST, PHOTO, COMMENT
 
-
+# Mark
 pytestmark = pytest.mark.text_gui
 
+# Class fixture
 @pytest.fixture
 def text_gui_instance() -> text_gui:
     return text_gui()
+
+# Patches
+set_next_state_patch = patch('api_interactor.text_gui.text_gui.set_next_state')
+fetch_and_print_all_patch = patch('api_interactor.fetcher.fetcher.fetch_and_print_all_of_topic')
+inspect_specific_patch = patch('api_interactor.text_gui.text_gui.inspect_specific')
+set_next_state_patch = patch('api_interactor.text_gui.text_gui.set_next_state')
+
+# Commenæy used testing parameterizations
+list_of_complex_states = [TOP, USER, ALBUM, POST]
+
+
 
 def test_route_map(
         text_gui_instance: text_gui,
@@ -30,10 +42,35 @@ def test_next_state(text_gui_instance: text_gui) -> None:
     text_gui_instance.set_next_state(test_state)
     assert text_gui_instance.state == test_state
 
+@patch('api_interactor.fetcher.fetcher.fetch_and_print_all_of_topic')
+def test_specific_path_request(
+        fetch_and_print_all_of_topic_mock: Mock,
+        text_gui_instance: text_gui,
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    # Temporary change the input function to return users/1
+    monkeypatch.setattr('builtins.input', lambda _: 'users/1')
+
+    text_gui_instance.inspect_specific_path()
+    fetch_and_print_all_of_topic_mock.assert_called_with('users/1')
+
+
+
+
+# TODO Create a class to contain all the state tests
+
+def get_and_run_function(
+        text_gui_instance: text_gui,
+        function_name: str) -> None:
+    # Get the selected function
+    func = getattr(text_gui_instance, function_name + '_state')
+    # Run it with the fixtures text gui instance
+    func()
+
+
 @pytest.mark.parametrize('user_input', 
                         ['1', 'q'])
 @pytest.mark.parametrize('function_input', 
-                        ['user', 'album', 'photo', 'post', 'comment'])
+                        [USER, ALBUM, PHOTO, POST, COMMENT])
 def test_inspect_specific(
         text_gui_instance: text_gui,
         user_input: str,
@@ -55,41 +92,142 @@ def test_inspect_specific(
         assert string == f'\nThe {function_input} ID must be an integer\n'    
 
 
-# def inspect_specific(self, id_type: str) -> None:
-#     '''
-#     This function asks the user what ID they want to inspect
-#     goes to the next state based on the provided id_type
-#     '''
-#     user_input = input('\n'
-#                         f'Type the ID of the desired {id_type}'
-#                         'or q to go back:\n')
-#     if user_input.isdigit():
-#         # Set the current selected id
-#         self.selected_ids[id_type] = user_input
-#         # Set the next state based on the provided id_type
-#         self.set_next_state(id_type)
-#     elif not user_input == 'q':
-#         self.inspect_specific(id_type)
-#         print(f'The {id_type} ID must be an integer')
 
-@patch('requests.get')
-class TestApiRelatedTextGuiFunctions:
 
-    def test_specific_path_request(
-            self,
-            mock_get: Mock,
-            text_gui_instance: text_gui,
-            api_mock_instance_valid: Mock,
-            monkeypatch: pytest.MonkeyPatch,
-            capsys: pytest.CaptureFixture[str]) -> None:
-        # Temporary change the input function to return users/1
-        monkeypatch.setattr('builtins.input', lambda _: 'users/1')
-        # Use the predifined mock
-        mock_response = api_mock_instance_valid
-        mock_get.return_value = mock_response
-        text_gui_instance.inspect_specific_path()
+
+
+
+
+
+
+@pytest.mark.parametrize('user_input', ['test', 'q'])
+@pytest.mark.parametrize('function_names', list_of_complex_states)
+# All states react the same to q and default
+def test_consistent_responses(
+        text_gui_instance: text_gui,
+        user_input: str,
+        function_names: str,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    # Temporary change the input function to return test
+    monkeypatch.setattr('builtins.input', lambda _: user_input)
+    get_and_run_function(text_gui_instance, function_names)
+
+    if user_input == 'q':
+        assert text_gui_instance.exit
+    else:
+        # Capture the print output
         captured_output = capsys.readouterr()
-        string = captured_output.out[1:-1]  # Remove leading and lagging line change
-        assert string == api_mock_instance_valid.string_converted_expected_result
+        string = captured_output.out
+        assert string == '\nInvalid option\n'
+
+@pytest.mark.parametrize('user_input', ['1', '2', '3', '5'])
+@pytest.mark.parametrize('function_name', list_of_complex_states)
+@fetch_and_print_all_patch
+def test_print_all_of_topic_in_states(
+        fetch_and_print_all_of_topic_mock: Mock,
+        user_input: str,
+        function_name: str,
+        text_gui_instance: text_gui,
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    valid_tries = {}
+    valid_tries[TOP] = ['1']
+    valid_tries[USER] = ['1', '2', '3', '5']
+    valid_tries[ALBUM] = ['1', '2']
+    valid_tries[POST] = ['1', '2']
+
+    # Only test the paths that should result in an API call
+    if user_input not in valid_tries[function_name]:
+        return
+
+    # Temporary change the input function
+    monkeypatch.setattr('builtins.input', lambda _: user_input)
+
+    # Populate the selected ids dict
+    text_gui_instance.selected_ids[function_name] = '1'
+
+    # Run the state function
+    get_and_run_function(text_gui_instance, function_name)
+
+    fetch_and_print_all_of_topic_mock.assert_called_once()
 
 
+@pytest.mark.parametrize('user_input', ['2', '3', '4', '6'])
+@pytest.mark.parametrize('function_name', list_of_complex_states)
+@inspect_specific_patch
+def test_inspect_specific_path(
+        inspect_specific_mock: Mock,
+        user_input: str,
+        function_name: str,
+        text_gui_instance: text_gui,
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    valid_tries = {}
+    valid_tries[TOP] = ['2']
+    valid_tries[USER] = ['4', '6']
+    valid_tries[ALBUM] = ['3']
+    valid_tries[POST] = ['3']
+
+    # Only test the paths that should result in an API call
+    if user_input not in valid_tries[function_name]:
+        return
+
+    # Temporary change the input function
+    monkeypatch.setattr('builtins.input', lambda _: user_input)
+
+    # Run the state function
+    get_and_run_function(text_gui_instance, function_name)
+
+    # Ensure the path calls inspect_specific
+    inspect_specific_mock.assert_called_once()
+
+
+@pytest.mark.parametrize('function_name, expected_state_argument', 
+                        [(USER, TOP), (POST, USER), (ALBUM, USER)])
+@set_next_state_patch
+def test_set_state_path(
+    set_next_state_mock: Mock,
+    function_name: str,
+    expected_state_argument : str,
+    text_gui_instance: text_gui,
+    monkeypatch: pytest.MonkeyPatch) -> None:
+    # Temporary change the input function
+    monkeypatch.setattr('builtins.input', lambda _: '9')
+
+    # Run the state function
+    get_and_run_function(text_gui_instance, function_name)
+
+    # Ensure the path calls inspect_specific
+    set_next_state_mock.assert_called_with(expected_state_argument)
+
+
+
+@pytest.mark.parametrize('function_name, expected_state_argument', 
+                        [(PHOTO, ALBUM), (COMMENT, POST)])
+@fetch_and_print_all_patch
+@set_next_state_patch
+def test_function_calls_in_end_states(
+    set_next_state_mock: Mock,
+    fetch_and_print_all_of_topic_mock: Mock,
+    function_name: str,
+    expected_state_argument : str,
+    text_gui_instance: text_gui) -> None:
+    
+    # Populate the selected ids dict
+    text_gui_instance.selected_ids[function_name] = '1'
+
+    # Run the state function
+    get_and_run_function(text_gui_instance, function_name)
+
+    # Ensure the paths sets the correct next state
+    set_next_state_mock.assert_called_with(expected_state_argument)
+    # Ensure the end paths correctly calls fetch_and_print_all_of_topic
+    fetch_and_print_all_of_topic_mock.assert_called_with(f'/{function_name}s/1')
+
+# TODO
+# def top_state(self) -> None:
+#         case '3':
+#             self.inspect_specific_path()
+#         case '4':
+#             self.print_route_map()
+#         case '9':
+#             self.activate_exit()

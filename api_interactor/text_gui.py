@@ -61,7 +61,7 @@ class text_gui():
             case '9' | 'q':
                 self.activate_exit()
             case default:
-                print('Invalid option\n')
+                print('\nInvalid option')
 
     def user_state(self) -> None:
         user_input = input('1. Display the data of the user\n'
@@ -98,7 +98,7 @@ class text_gui():
             case 'q':
                 self.activate_exit()
             case default:
-                print('Invalid option\n')
+                print('\nInvalid option')
 
     def album_state(self) -> None:
         user_input = input('1. Display the data of the album\n'
@@ -111,7 +111,7 @@ class text_gui():
                 self.fetcher.fetch_and_print_all_of_topic(
                     '/albums/' + self.selected_ids['album']
                     )
-            case '1':
+            case '2':
                 self.fetcher.fetch_and_print_all_of_topic(
                     '/albums/' + self.selected_ids['album'] + '/photos'
                     )
