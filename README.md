@@ -5,7 +5,7 @@ The application is a simple text GUI, which enables the user to make **GET** cal
 ### How to run the application:
 1. Install the necessary Python packages by typing:
 ```properties
-pip install requirement.txt
+pip install -r requirements.txt
 ```  
 2. Run the application by typing:
 ```properties
@@ -47,8 +47,14 @@ pytest --cov-report html --cov .
 3. Open the HTML file called *index* with any browser.
 
 ## Mypy
-Mypy can be used to ensure type hinting is utilized throughout the project by typing:
+Mypy can be used to ensure type hinting is utilized throughout the project by doing the following:
+1. Install the library stubs for **requests**.
+```properties
+mypy --install-types
+```
+2. Run Mypy:
 ```properties
 mypy tests api_interactor
 ```
+
 The **pyproject.toml** file also ensures that missing type hinting is highlighted by Visual Studio Code.
