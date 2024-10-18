@@ -10,16 +10,28 @@ pytestmark = pytest.mark.text_gui
 def text_gui_instance() -> text_gui:
     return text_gui()
 
+text_gui_path = 'api_interactor.text_gui.text_gui'
+fetcher_path = 'api_interactor.fetcher.fetcher'
+
 # Patches
-set_next_state_patch = patch('api_interactor.text_gui.text_gui.set_next_state')
-fetch_and_print_all_patch = patch('api_interactor.fetcher.fetcher.fetch_and_print_all_of_topic')
-inspect_specific_patch = patch('api_interactor.text_gui.text_gui.inspect_specific')
-set_next_state_patch = patch('api_interactor.text_gui.text_gui.set_next_state')
+set_next_state_patch = patch(f'{text_gui_path}.set_next_state')
+fetch_and_print_all_patch = patch(f'{fetcher_path}.fetch_and_print_all_of_topic')
+inspect_specific_patch = patch(f'{text_gui_path}.inspect_specific')
+set_next_state_patch = patch(f'{text_gui_path}.set_next_state')
 
 # Commenæy used testing parameterizations
 list_of_complex_states = [TOP, USER, ALBUM, POST]
 
 
+
+def get_and_run_function(
+        text_gui_instance: text_gui,
+        function_name: str) -> None:
+    # Gets and runs a state function based on the state name 
+    # Get the selected function
+    func = getattr(text_gui_instance, function_name + '_state')
+    # Run it with the fixtures text gui instance
+    func()
 
 def test_route_map(
         text_gui_instance: text_gui,
@@ -42,7 +54,7 @@ def test_next_state(text_gui_instance: text_gui) -> None:
     text_gui_instance.set_next_state(test_state)
     assert text_gui_instance.state == test_state
 
-@patch('api_interactor.fetcher.fetcher.fetch_and_print_all_of_topic')
+@fetch_and_print_all_patch
 def test_specific_path_request(
         fetch_and_print_all_of_topic_mock: Mock,
         text_gui_instance: text_gui,
@@ -52,20 +64,6 @@ def test_specific_path_request(
 
     text_gui_instance.inspect_specific_path()
     fetch_and_print_all_of_topic_mock.assert_called_with('users/1')
-
-
-
-
-# TODO Create a class to contain all the state tests
-
-def get_and_run_function(
-        text_gui_instance: text_gui,
-        function_name: str) -> None:
-    # Get the selected function
-    func = getattr(text_gui_instance, function_name + '_state')
-    # Run it with the fixtures text gui instance
-    func()
-
 
 @pytest.mark.parametrize('user_input', 
                         ['1', 'q'])
@@ -91,35 +89,33 @@ def test_inspect_specific(
         assert text_gui_instance.state == pre_state
         assert string == f'\nThe {function_input} ID must be an integer\n'    
 
-
-
-
-
-
-
-
-
-
-@pytest.mark.parametrize('user_input', ['test', 'q'])
 @pytest.mark.parametrize('function_names', list_of_complex_states)
 # All states react the same to q and default
-def test_consistent_responses(
+def test_exit_paths(
         text_gui_instance: text_gui,
-        user_input: str,
+        function_names: str,
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    # Temporary change the input function to return test
+    monkeypatch.setattr('builtins.input', lambda _: 'q')
+    get_and_run_function(text_gui_instance, function_names)
+
+    assert text_gui_instance.exit
+
+@pytest.mark.parametrize('function_names', list_of_complex_states)
+# All states react the same to q and default
+def test_invalid_options_path(
+        text_gui_instance: text_gui,
         function_names: str,
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str]) -> None:
     # Temporary change the input function to return test
-    monkeypatch.setattr('builtins.input', lambda _: user_input)
+    monkeypatch.setattr('builtins.input', lambda _: 'test')
     get_and_run_function(text_gui_instance, function_names)
 
-    if user_input == 'q':
-        assert text_gui_instance.exit
-    else:
-        # Capture the print output
-        captured_output = capsys.readouterr()
-        string = captured_output.out
-        assert string == '\nInvalid option\n'
+    # Capture the print output
+    captured_output = capsys.readouterr()
+    string = captured_output.out
+    assert string == '\nInvalid option\n'
 
 @pytest.mark.parametrize('user_input', ['1', '2', '3', '5'])
 @pytest.mark.parametrize('function_name', list_of_complex_states)
@@ -180,7 +176,6 @@ def test_inspect_specific_path(
     # Ensure the path calls inspect_specific
     inspect_specific_mock.assert_called_once()
 
-
 @pytest.mark.parametrize('function_name, expected_state_argument', 
                         [(USER, TOP), (POST, USER), (ALBUM, USER)])
 @set_next_state_patch
@@ -198,8 +193,6 @@ def test_set_state_path(
 
     # Ensure the path calls inspect_specific
     set_next_state_mock.assert_called_with(expected_state_argument)
-
-
 
 @pytest.mark.parametrize('function_name, expected_state_argument', 
                         [(PHOTO, ALBUM), (COMMENT, POST)])
@@ -223,11 +216,25 @@ def test_function_calls_in_end_states(
     # Ensure the end paths correctly calls fetch_and_print_all_of_topic
     fetch_and_print_all_of_topic_mock.assert_called_with(f'/{function_name}s/1')
 
-# TODO
-# def top_state(self) -> None:
-#         case '3':
-#             self.inspect_specific_path()
-#         case '4':
-#             self.print_route_map()
-#         case '9':
-#             self.activate_exit()
+@pytest.mark.parametrize('function_name, user_input', 
+                        [('inspect_specific_path', '3'),
+                         ('print_route_map', '4'),
+                         ('activate_exit', '9')])
+def test_unique_top_function_calls(
+    monkeypatch: pytest.MonkeyPatch,
+    function_name: str,
+    user_input: str,
+    text_gui_instance: text_gui) -> None:
+
+    @patch(f'{text_gui_path}.{function_name}')
+    def test_inspect_activate_exit_call(
+        function_mock: Mock) -> None:
+        text_gui_instance.top_state()
+
+        # Ensure the expected function is called
+        function_mock.assert_called_once()
+
+    # Temporary change the input function
+    monkeypatch.setattr('builtins.input', lambda _: user_input)
+    
+    test_inspect_activate_exit_call()

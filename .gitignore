@@ -2,4 +2,3 @@
 test.py
 *.pyc
 .vscode/settings.json
-pyproject.toml
