@@ -37,6 +37,31 @@ def get_and_run_function(
     func()
 
 
+def test_loop_raise_value_error(text_gui_instance: text_gui) -> None:
+    with pytest.raises(ValueError):
+        text_gui_instance.state = 'not_a_state'
+        text_gui_instance.loop()
+
+
+def test_loop_two_itterations(
+        text_gui_instance: text_gui,
+        capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch) -> None:
+
+    def mock_state_function(self: text_gui) -> None:
+        if self.state == USER:
+            self.exit = True
+        self.state = USER
+
+    monkeypatch.setattr(f'{text_gui_path}.{TOP}_state', mock_state_function)
+    monkeypatch.setattr(f'{text_gui_path}.{USER}_state', mock_state_function)
+    text_gui_instance.loop()
+    captured_output = capsys.readouterr()
+    string = captured_output.out
+    assert text_gui_instance.exit
+    assert string == '\n'
+
+
 def test_route_map(
         text_gui_instance: text_gui,
         capsys: pytest.CaptureFixture[str]) -> None:

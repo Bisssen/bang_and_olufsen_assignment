@@ -12,8 +12,11 @@ def fetcher_instance() -> fetcher:
 
 @patch('requests.get')
 class TestFetchAll:
-    get_test_parameters = [([{'id': 1}], 200, "{'id': 1}"),
-                           ([], 404, "The selected ID is invalid")]
+    get_test_parameters = [
+        ([{'id': 1}], 200, "{'id': 1}"),
+        ([{'id': 1}, {'name': 'bob'}], 200, "{'id': 1}\n{'name': 'bob'}"),
+        ({'id': 1}, 200, "{'id': 1}"),
+        ([], 404, "The selected ID is invalid")]
 
     @pytest.mark.parametrize('routes',
                              ['users/1', '/albums/1/photos', 'photos/2'])
